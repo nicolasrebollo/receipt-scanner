@@ -3,6 +3,7 @@ import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -18,6 +19,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { symbolName } from '@/constants/icons';
 import { Radius, Spacing, useTheme } from '@/constants/theme';
 
 // ---------------------------------------------------------------------------
@@ -74,6 +78,7 @@ export function Screen({
 }) {
   const theme = useTheme();
   const refresh = useRefresh(onRefresh);
+  const topInset = useWebTopInset();
   return (
     <ScrollView
       refreshControl={refresh}
@@ -83,11 +88,20 @@ export function Screen({
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
       {...scrollProps}
-      contentContainerStyle={[styles.screenContent, contentStyle]}>
+      contentContainerStyle={[styles.screenContent, { paddingTop: Spacing.lg + topInset }, contentStyle]}>
       {title ? <ScreenTitle title={title} accessory={accessory} /> : null}
       {children}
     </ScrollView>
   );
+}
+
+/**
+ * Space for the status bar on web. On iOS, scroll views inset themselves automatically; a home-screen
+ * web app draws under the status bar instead, so pad by the safe-area inset.
+ */
+export function useWebTopInset(): number {
+  const insets = useSafeAreaInsets();
+  return Platform.OS === 'web' ? insets.top : 0;
 }
 
 /** Pull-to-refresh control that spins until `onRefresh` settles. */
@@ -133,9 +147,14 @@ export function ModalHeader({
   saving?: boolean;
 }) {
   const theme = useTheme();
+  const topInset = useWebTopInset();
   return (
     <View
-      style={[styles.modalHeader, { backgroundColor: theme.background, borderBottomColor: theme.separator }]}>
+      style={[
+        styles.modalHeader,
+        { backgroundColor: theme.background, borderBottomColor: theme.separator },
+        topInset > 0 && { paddingTop: Spacing.md + 2 + topInset },
+      ]}>
       <Pressable accessibilityRole="button" onPress={onCancel} hitSlop={12} style={styles.modalSide}>
         <Text style={[textVariants.body, { color: theme.accent }]}>Cancel</Text>
       </Pressable>
@@ -192,7 +211,7 @@ export function Icon({
   weight?: 'regular' | 'medium' | 'semibold' | 'bold';
 }) {
   const theme = useTheme();
-  return <SymbolView name={name} size={size} tintColor={color ?? theme.text} weight={weight} />;
+  return <SymbolView name={symbolName(name)} size={size} tintColor={color ?? theme.text} weight={weight} />;
 }
 
 // ---------------------------------------------------------------------------

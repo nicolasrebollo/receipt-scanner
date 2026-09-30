@@ -2,12 +2,13 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { draftToInput, ReceiptForm } from '@/components/receipt-form';
 import { AppText, Card, Icon, ModalHeader, Screen } from '@/components/ui';
 import { Radius, Spacing, useTheme } from '@/constants/theme';
 import { today } from '@/lib/dates';
+import { showMessage } from '@/lib/dialogs';
 import { createReceipt } from '@/lib/receipts';
 import { prepareImage, readReceipt, type PreparedImage } from '@/lib/scan';
 import type { ReceiptDraft } from '@/lib/types';
@@ -78,7 +79,7 @@ export default function ReviewScreen() {
       router.back();
     } catch (e) {
       console.warn('Saving receipt failed', e);
-      Alert.alert('Couldn’t save', 'Check your connection and try again.');
+      showMessage('Couldn’t save', 'Check your connection and try again.');
       setSaving(false);
     }
   };

@@ -11,6 +11,7 @@ import {
   Separator,
   Stepper,
   useRefresh,
+  useWebTopInset,
 } from '@/components/ui';
 import { Radius, Spacing, useTheme } from '@/constants/theme';
 import { useReceipts } from '@/hooks/use-receipts';
@@ -43,6 +44,7 @@ export default function HistoryScreen() {
   const range = useMemo(() => (month ? monthRange(month) : undefined), [month]);
   const { receipts, loading, error, reload } = useReceipts({ range, search, category });
   const refreshControl = useRefresh(reload);
+  const topInset = useWebTopInset();
 
   const sections = useMemo(() => {
     const byDay = new Map<string, Section>();
@@ -132,7 +134,7 @@ export default function HistoryScreen() {
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: Spacing.lg + topInset }]}
       refreshControl={refreshControl}
       sections={sections}
       keyExtractor={(r) => r.id}

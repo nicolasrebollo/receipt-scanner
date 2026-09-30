@@ -1,11 +1,11 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { StyleSheet, TextInput, View } from 'react-native';
 
+import { DateField } from '@/components/date-field';
 import { AppText, Card, Chip, TextField } from '@/components/ui';
 import { Radius, Spacing, useTheme } from '@/constants/theme';
 import { CATEGORIES, type CategoryId } from '@/lib/categories';
-import { parseISODate, toISODate } from '@/lib/dates';
-import { parseAmount } from '@/lib/money';
+import { today } from '@/lib/dates';
+import { currencySymbol, parseAmount } from '@/lib/money';
 import type { ReceiptDraft } from '@/lib/types';
 import type { ReceiptInput } from '@/lib/receipts';
 
@@ -20,14 +20,6 @@ export function draftToInput(draft: ReceiptDraft): ReceiptInput | null {
     category: draft.category,
     notes: draft.notes.trim() || null,
   };
-}
-
-function currencySymbol(currency: string) {
-  return (
-    new Intl.NumberFormat(undefined, { style: 'currency', currency })
-      .formatToParts(0)
-      .find((p) => p.type === 'currency')?.value ?? '$'
-  );
 }
 
 export function ReceiptForm({
@@ -58,7 +50,8 @@ export function ReceiptForm({
           placeholderTextColor={theme.textMuted}
           keyboardType="decimal-pad"
           accessibilityLabel="Amount"
-          style={[styles.amountInput, { color: theme.text }]}
+          // Size the field to its contents so the amount stays centered (web inputs don't auto-size).
+          style={[styles.amountInput, { color: theme.text, width: (draft.total.length || 4) * 30 + 8 }]}
         />
       </View>
 
@@ -73,13 +66,7 @@ export function ReceiptForm({
 
       <Card style={styles.dateCard}>
         <AppText variant="body">Date</AppText>
-        <DateTimePicker
-          value={parseISODate(draft.purchased_on)}
-          mode="date"
-          display="compact"
-          maximumDate={new Date()}
-          onChange={(_, date) => date && set('purchased_on', toISODate(date))}
-        />
+        <DateField value={draft.purchased_on} max={today()} onChange={(d) => set('purchased_on', d)} />
       </Card>
 
       <View style={{ gap: Spacing.sm }}>
@@ -125,7 +112,6 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: '700',
     letterSpacing: -1,
-    minWidth: 120,
     fontVariant: ['tabular-nums'],
   },
   dateCard: {

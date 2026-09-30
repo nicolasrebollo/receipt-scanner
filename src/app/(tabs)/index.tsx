@@ -66,7 +66,7 @@ export default function ScanScreen() {
           style={{ flex: 1 }}
         />
         <Button
-          title="Enter manually"
+          title="Type it in"
           icon="square.and.pencil"
           variant="secondary"
           onPress={() => router.push('/review')}

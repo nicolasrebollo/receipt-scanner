@@ -70,6 +70,22 @@ While you're developing, your partner can also run the app through Expo Go, but 
 
 To cut API costs by about 5× at some loss of accuracy on messy receipts, switch `MODEL` in `supabase/functions/scan-receipt/index.ts` to `claude-haiku-4-5`. That model doesn't support the `effort` setting or `fallbacks`, so also remove the `betas`, `fallbacks`, and `effort` lines. Then redeploy the function.
 
+## Free web app (add to Home Screen)
+
+The same code also builds as a website. Host it for free on Expo's hosting (EAS Hosting), and each person adds it to their iPhone home screen from Safari. It opens full-screen with its own icon. There's no Apple fee, and your Mac doesn't need to be running.
+
+```bash
+npx supabase functions deploy scan-receipt --use-api   # once: lets the browser call the scan function
+npx eas-cli@latest login                              # same Expo account as Expo Go
+npm run deploy:web                                    # builds the site and publishes it
+```
+
+The first deploy asks you to pick a name, which becomes your address: `https://your-name.expo.app`. The build uses the Supabase values from your local `.env`. Run `npm run deploy:web` again after any code change.
+
+On each iPhone: open the address in **Safari**, tap **Share → Add to Home Screen**, then open the app from the new icon and sign in. The home-screen app keeps its own sign-in, separate from Safari.
+
+To try the web version locally first: `npm run web`.
+
 ## Installing for real (optional)
 
 To install the app without a Mac running, build it with [EAS](https://docs.expo.dev/eas/). This needs an Apple Developer account ($99/year), and you don't need Xcode:

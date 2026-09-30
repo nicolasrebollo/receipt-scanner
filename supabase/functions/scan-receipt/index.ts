@@ -59,7 +59,11 @@ type ScanOutput = {
   category: Category;
 };
 
-const anthropic = new Anthropic();
+// Organization-level API keys must name a workspace; workspace-scoped keys don't need this.
+const workspaceId = Deno.env.get('ANTHROPIC_WORKSPACE_ID');
+const anthropic = new Anthropic(
+  workspaceId ? { defaultHeaders: { 'anthropic-workspace-id': workspaceId } } : undefined,
+);
 
 // Newer projects expose publishable keys as a JSON map; older ones only have the legacy anon key.
 function publicKey(): string {
@@ -67,14 +71,22 @@ function publicKey(): string {
   return keys.default ?? Object.values(keys)[0] ?? Deno.env.get('SUPABASE_ANON_KEY')!;
 }
 
+// The web version of the app calls this from the browser, which requires CORS headers.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   // Only signed-in app users may spend API credits.
@@ -125,6 +137,16 @@ Deno.serve(async (req) => {
     console.error('Claude request failed', error);
     if (error instanceof Anthropic.RateLimitError) {
       return json({ error: 'Too many scans right now. Try again in a minute.' }, 429);
+    }
+    if (error instanceof Anthropic.AuthenticationError) {
+      return json({ error: 'The server’s Anthropic API key is missing or invalid.' }, 502);
+    }
+    if (error instanceof Anthropic.APIError) {
+      // Surface Claude's own explanation (e.g. "credit balance is too low") so setup problems are obvious.
+      return json({ error: `Claude API error ${error.status ?? ''}: ${error.message}` }, 502);
+    }
+    if (error instanceof Anthropic.AnthropicError) {
+      return json({ error: `Claude setup error: ${error.message}` }, 502);
     }
     return json({ error: "Couldn't read the receipt. Try again or enter it manually." }, 502);
   }

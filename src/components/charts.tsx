@@ -90,9 +90,11 @@ export function BarChart({
           {bars.map((b) => (
             <View key={b.key} style={styles.tickCell}>
               {b.tick ? (
-                <AppText variant="caption" tone="muted" style={styles.tickText} numberOfLines={1}>
-                  {b.tick}
-                </AppText>
+                <View style={styles.tickLabel}>
+                  <AppText variant="caption" tone="muted">
+                    {b.tick}
+                  </AppText>
+                </View>
               ) : null}
             </View>
           ))}
@@ -164,8 +166,9 @@ const styles = StyleSheet.create({
   column: { flex: 1, height: '100%', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 1 },
   bar: { width: '100%', maxWidth: 24, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   ticks: { flexDirection: 'row', marginTop: 6 },
-  tickCell: { flex: 1, alignItems: 'center', overflow: 'visible' },
-  tickText: { width: 36, textAlign: 'center' },
+  tickCell: { flex: 1, height: 16, overflow: 'visible' },
+  // Centered on the column but wider than it, so labels like "15" never get squeezed.
+  tickLabel: { position: 'absolute', left: '50%', width: 40, marginLeft: -20, alignItems: 'center' },
   breakdownHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   breakdownIcon: { width: 22, alignItems: 'center' },
   breakdownValue: { minWidth: 72, textAlign: 'right' },

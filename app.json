@@ -10,7 +10,10 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "supportsTablet": false,
-      "bundleIdentifier": "com.nicolasrebollo.receipts"
+      "bundleIdentifier": "com.nicolasrebollo.receipts",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -44,6 +47,17 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "web": {
+      "output": "single",
+      "bundler": "metro",
+      "favicon": "./public/favicon.png"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f7da49b3-bf23-4bd8-8aa1-e00e37c18a0e"
+      }
     }
   }
 }

@@ -1,7 +1,8 @@
-import { Alert, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
 
 import { AppText, Button, Card, Icon, Screen, SectionHeader, Separator } from '@/components/ui';
 import { Spacing, useTheme } from '@/constants/theme';
+import { chooseOption, confirmAction, promptText, showMessage } from '@/lib/dialogs';
 import { supabase } from '@/lib/supabase';
 import { useHousehold } from '@/providers/app-provider';
 
@@ -13,71 +14,55 @@ export default function HouseholdScreen() {
   const userId = session?.user.id;
   const me = members.find((m) => m.user_id === userId);
 
-  const shareInvite = () =>
-    Share.share({
-      message: `Join our shared budget "${household.name}" in the Receipts app with invite code ${household.invite_code}`,
+  const shareInvite = () => {
+    const message = `Join our shared budget "${household.name}" in the Receipts app with invite code ${household.invite_code}`;
+    // Browsers without a share sheet reject; show the code instead.
+    Share.share({ message }).catch(() => showMessage('Invite code', household.invite_code));
+  };
+
+  const renameHousehold = async () => {
+    const name = await promptText({ title: 'Budget name', defaultValue: household.name });
+    if (!name?.trim()) return;
+    await supabase.from('households').update({ name: name.trim() }).eq('id', household.id);
+    refreshHousehold();
+  };
+
+  const renameMe = async () => {
+    const name = await promptText({
+      title: 'Your name',
+      message: 'This is how you appear to others in your household.',
+      defaultValue: me?.display_name,
     });
+    if (!name?.trim() || !userId) return;
+    await supabase
+      .from('household_members')
+      .update({ display_name: name.trim() })
+      .eq('household_id', household.id)
+      .eq('user_id', userId);
+    refreshHousehold();
+  };
 
-  const renameHousehold = () =>
-    Alert.prompt(
-      'Budget name',
-      undefined,
-      async (name) => {
-        if (!name?.trim()) return;
-        await supabase.from('households').update({ name: name.trim() }).eq('id', household.id);
-        refreshHousehold();
-      },
-      'plain-text',
-      household.name,
-    );
+  const chooseCurrency = async () => {
+    const currency = await chooseOption({ title: 'Currency', options: CURRENCIES, current: household.currency });
+    if (!currency || currency === household.currency) return;
+    await supabase.from('households').update({ currency }).eq('id', household.id);
+    refreshHousehold();
+  };
 
-  const renameMe = () =>
-    Alert.prompt(
-      'Your name',
-      'This is how you appear to others in your household.',
-      async (name) => {
-        if (!name?.trim() || !userId) return;
-        await supabase
-          .from('household_members')
-          .update({ display_name: name.trim() })
-          .eq('household_id', household.id)
-          .eq('user_id', userId);
-        refreshHousehold();
-      },
-      'plain-text',
-      me?.display_name,
-    );
-
-  const chooseCurrency = () =>
-    Alert.alert('Currency', undefined, [
-      ...CURRENCIES.map((c) => ({
-        text: c === household.currency ? `${c} ✓` : c,
-        onPress: async () => {
-          await supabase.from('households').update({ currency: c }).eq('id', household.id);
-          refreshHousehold();
-        },
-      })),
-      { text: 'Cancel', style: 'cancel' as const },
-    ]);
-
-  const leave = () =>
-    Alert.alert(
-      'Leave this budget?',
-      members.length > 1
-        ? 'You’ll stop seeing its receipts. You can rejoin later with the invite code.'
-        : 'You’re the only member, so its receipts will no longer be reachable.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Leave',
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.rpc('leave_household');
-            refreshHousehold();
-          },
-        },
-      ],
-    );
+  const leave = async () => {
+    const confirmed = await confirmAction({
+      title: 'Leave this budget?',
+      message:
+        members.length > 1
+          ? 'You’ll stop seeing its receipts. You can rejoin later with the invite code.'
+          : 'You’re the only member, so its receipts will no longer be reachable.',
+      confirmLabel: 'Leave',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    await supabase.rpc('leave_household');
+    refreshHousehold();
+  };
 
   return (
     <Screen title="Household">

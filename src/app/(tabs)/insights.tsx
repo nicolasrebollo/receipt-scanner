@@ -1,7 +1,7 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { DateField } from '@/components/date-field';
 import { BarChart, Breakdown, type Bar, type BreakdownRow } from '@/components/charts';
 import { ReceiptRow } from '@/components/receipt-row';
 import {
@@ -153,24 +153,20 @@ export default function InsightsScreen() {
         <Card style={styles.customRange}>
           <View style={styles.customRow}>
             <AppText variant="body">From</AppText>
-            <DateTimePicker
-              value={parseISODate(custom.start)}
-              mode="date"
-              display="compact"
-              maximumDate={parseISODate(custom.end)}
-              onChange={(_, d) => d && setCustom((c) => ({ ...c, start: toISODate(d) }))}
+            <DateField
+              value={custom.start}
+              max={custom.end}
+              onChange={(d) => setCustom((c) => ({ ...c, start: d }))}
             />
           </View>
           <Separator />
           <View style={styles.customRow}>
             <AppText variant="body">To</AppText>
-            <DateTimePicker
-              value={parseISODate(custom.end)}
-              mode="date"
-              display="compact"
-              minimumDate={parseISODate(custom.start)}
-              maximumDate={new Date()}
-              onChange={(_, d) => d && setCustom((c) => ({ ...c, end: toISODate(d) }))}
+            <DateField
+              value={custom.end}
+              min={custom.start}
+              max={today()}
+              onChange={(d) => setCustom((c) => ({ ...c, end: d }))}
             />
           </View>
         </Card>

@@ -1,4 +1,6 @@
-type Style = 'full' | 'whole' | 'compact';
+// Hermes (the JS engine on the phone) supports only basic Intl.NumberFormat: no formatToParts,
+// no compact notation. Stick to plain currency formatting here.
+type Style = 'full' | 'whole';
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
@@ -10,7 +12,6 @@ function formatter(currency: string, style: Style) {
       style: 'currency',
       currency,
       ...(style === 'whole' ? { maximumFractionDigits: 0, minimumFractionDigits: 0 } : {}),
-      ...(style === 'compact' ? { notation: 'compact', maximumFractionDigits: 1 } : {}),
     });
     formatters.set(key, f);
   }
@@ -21,9 +22,19 @@ export function formatMoney(amount: number, currency: string): string {
   return formatter(currency, 'full').format(amount);
 }
 
+/** "$" for USD, "€" for EUR: a formatted zero with the digits stripped. */
+export function currencySymbol(currency: string): string {
+  return formatter(currency, 'whole').format(0).replace(/[0-9\s\u00a0\u202f]/g, '') || currency;
+}
+
 /** Short form for chart axes: $80, $1.2K. */
 export function formatMoneyCompact(amount: number, currency: string): string {
-  return formatter(currency, amount < 1000 ? 'whole' : 'compact').format(amount);
+  if (amount < 1000) return formatter(currency, 'whole').format(amount);
+  const [value, suffix] = amount >= 1_000_000 ? [amount / 1_000_000, 'M'] : [amount / 1000, 'K'];
+  const digits = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(value) + suffix;
+  const symbol = currencySymbol(currency);
+  const symbolFirst = formatter(currency, 'whole').format(0).trim().startsWith(symbol);
+  return symbolFirst ? `${symbol}${digits}` : `${digits} ${symbol}`;
 }
 
 /** Parses what the user typed ("12.5", "1,234.56", "$8") into a number, or null. */

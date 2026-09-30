@@ -2,12 +2,13 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { draftToInput, ReceiptForm } from '@/components/receipt-form';
 import { AppText, Button, ModalHeader, Screen } from '@/components/ui';
 import { Radius, Spacing, useTheme } from '@/constants/theme';
 import { formatDay, toISODate } from '@/lib/dates';
+import { confirmAction, showMessage } from '@/lib/dialogs';
 import { deleteReceipt, getReceipt, receiptImageUrl, updateReceipt } from '@/lib/receipts';
 import type { Receipt, ReceiptDraft } from '@/lib/types';
 import { useHousehold } from '@/providers/app-provider';
@@ -63,31 +64,29 @@ export default function ReceiptDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
-      Alert.alert('Couldn’t save', 'Check your connection and try again.');
+      showMessage('Couldn’t save', 'Check your connection and try again.');
       setBusy(false);
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!receipt) return;
-    Alert.alert('Delete this receipt?', 'It will be removed for everyone in your household.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          setBusy(true);
-          try {
-            await deleteReceipt(receipt);
-            notifyReceiptsChanged();
-            router.back();
-          } catch {
-            Alert.alert('Couldn’t delete', 'Check your connection and try again.');
-            setBusy(false);
-          }
-        },
-      },
-    ]);
+    const confirmed = await confirmAction({
+      title: 'Delete this receipt?',
+      message: 'It will be removed for everyone in your household.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setBusy(true);
+    try {
+      await deleteReceipt(receipt);
+      notifyReceiptsChanged();
+      router.back();
+    } catch {
+      showMessage('Couldn’t delete', 'Check your connection and try again.');
+      setBusy(false);
+    }
   };
 
   return (
