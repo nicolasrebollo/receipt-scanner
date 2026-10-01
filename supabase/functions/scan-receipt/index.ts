@@ -4,7 +4,9 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.129.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const MODEL = 'claude-opus-5-5';
+// Haiku is the cheapest model and reads receipts well enough; `claude-sonnet-5-5` or `claude-opus-5-5`
+// are more accurate on long or crumpled receipts at 2x and 4x the price.
+const MODEL = 'claude-haiku-4-5';
 
 // Keep in sync with src/lib/categories.ts and the receipts.category check constraint.
 const CATEGORIES = [
@@ -129,17 +131,12 @@ Deno.serve(async (req) => {
   if (!imageBase64) return json({ error: 'Missing image' }, 400);
   if (imageBase64.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'Image too large' }, 413);
 
-  let response: Anthropic.Beta.BetaMessage;
+  let response: Anthropic.Message;
   try {
-    response = await anthropic.beta.messages.create({
+    response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 8000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      output_config: {
-        effort: 'low',
-        format: { type: 'json_schema', schema: OUTPUT_SCHEMA },
-      },
+      output_config: { format: { type: 'json_schema', schema: OUTPUT_SCHEMA } },
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -190,11 +187,14 @@ Deno.serve(async (req) => {
     return json({ error: "That doesn't look like a readable receipt. Try a closer, flatter photo." }, 422);
   }
 
+  // Structured output doesn't guarantee the capitalization of enum values.
+  const category = String(parsed.category).toLowerCase() as Category;
+
   return json({
     merchant: parsed.merchant.trim().slice(0, 120),
     total: roundMoney(parsed.total),
     purchased_on: /^\d{4}-\d{2}-\d{2}$/.test(parsed.purchased_on) ? parsed.purchased_on : today,
-    category: CATEGORIES.includes(parsed.category) ? parsed.category : 'other',
+    category: CATEGORIES.includes(category) ? category : 'other',
     summary: (parsed.summary ?? '').trim().slice(0, 200),
     items: (parsed.items ?? [])
       .map((item) => ({

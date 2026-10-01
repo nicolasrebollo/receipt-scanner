@@ -67,9 +67,9 @@ While you're developing, your partner can also run the app through Expo Go, but 
 | Item | Cost |
 |---|---|
 | Supabase | Free tier (500 MB database, 1 GB photo storage) is plenty |
-| Claude API (`claude-opus-5-5`, low effort) | Roughly 2–3¢ per receipt, so about $2–3/month at 100 receipts |
+| Claude API (`claude-haiku-4-5`) | Roughly 1¢ per receipt, so about $1/month at 100 receipts |
 
-To cut API costs by about 5× at some loss of accuracy on messy receipts, switch `MODEL` in `supabase/functions/scan-receipt/index.ts` to `claude-haiku-4-5`. That model doesn't support the `effort` setting or `fallbacks`, so also remove the `betas`, `fallbacks`, and `effort` lines. Then redeploy the function.
+For better accuracy on long or crumpled receipts, change `MODEL` in `supabase/functions/scan-receipt/index.ts` to `claude-sonnet-5-5` (about 2× the price) or `claude-opus-5-5` (about 4×), then run `npm run deploy:functions`. Use the **Read items from photo** button on a saved receipt to compare results.
 
 ## Free web app (add to Home Screen)
 
