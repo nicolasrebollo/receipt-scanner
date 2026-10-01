@@ -6,6 +6,7 @@ import { Alert, Linking } from 'react-native';
 import type { CategoryId } from '@/lib/categories';
 import { today } from '@/lib/dates';
 import { supabase } from '@/lib/supabase';
+import type { ReceiptItem } from '@/lib/types';
 
 export type PickedImage = { uri: string; width: number; height: number };
 export type PreparedImage = { uri: string; base64: string };
@@ -14,6 +15,9 @@ export type ScanResult = {
   total: number;
   purchased_on: string;
   category: CategoryId;
+  // Absent if the deployed scan function predates summaries and itemized lists.
+  summary?: string;
+  items?: ReceiptItem[];
 };
 
 // Claude downsizes anything larger than this, so bigger photos would only slow the upload.

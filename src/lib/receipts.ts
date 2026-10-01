@@ -1,7 +1,7 @@
 import type { CategoryId } from '@/lib/categories';
 import type { DateRange } from '@/lib/dates';
 import { supabase } from '@/lib/supabase';
-import type { Receipt } from '@/lib/types';
+import type { Receipt, ReceiptItem } from '@/lib/types';
 
 export type ReceiptQuery = {
   householdId: string;
@@ -16,13 +16,18 @@ export type ReceiptInput = {
   purchased_on: string;
   category: CategoryId;
   notes: string | null;
+  items: ReceiptItem[];
 };
 
 const COLUMNS =
-  'id, household_id, created_by, merchant, total, purchased_on, category, notes, image_path, created_at';
+  'id, household_id, created_by, merchant, total, purchased_on, category, notes, items, image_path, created_at';
 
 function normalize(row: Receipt): Receipt {
-  return { ...row, total: Number(row.total) };
+  return {
+    ...row,
+    total: Number(row.total),
+    items: (row.items ?? []).map((item) => ({ name: String(item.name), price: Number(item.price) || 0 })),
+  };
 }
 
 export async function listReceipts(q: ReceiptQuery): Promise<Receipt[]> {
@@ -61,7 +66,7 @@ export async function createReceipt(
   householdId: string,
   input: ReceiptInput,
   imageBase64?: string,
-): Promise<void> {
+): Promise<string> {
   let imagePath: string | null = null;
   if (imageBase64) {
     imagePath = `${householdId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
@@ -75,10 +80,21 @@ export async function createReceipt(
     }
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('receipts')
-    .insert({ ...input, household_id: householdId, image_path: imagePath });
+    .insert({ ...input, household_id: householdId, image_path: imagePath })
+    .select('id')
+    .single();
   if (error) throw error;
+  return data.id;
+}
+
+/** Tells the rest of the household about a new receipt. Best effort: a failed notification never blocks saving. */
+export function announceReceipt(receiptId: string): void {
+  supabase.functions
+    .invoke('notify-receipt', { body: { receipt_id: receiptId } })
+    .then(({ error }) => error && console.warn('Notifying household failed', error))
+    .catch((e) => console.warn('Notifying household failed', e));
 }
 
 export async function updateReceipt(id: string, input: ReceiptInput): Promise<void> {
@@ -92,6 +108,18 @@ export async function deleteReceipt(receipt: Receipt): Promise<void> {
   if (receipt.image_path) {
     await supabase.storage.from('receipts').remove([receipt.image_path]);
   }
+}
+
+/** The stored receipt photo as base64 JPEG, ready to send back through the scanner. */
+export async function receiptImageBase64(path: string): Promise<string> {
+  const { data, error } = await supabase.storage.from('receipts').download(path);
+  if (error) throw error;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? ''); // drop the "data:…;base64," prefix
+    reader.readAsDataURL(data);
+  });
 }
 
 export async function receiptImageUrl(path: string): Promise<string | null> {

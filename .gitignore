@@ -46,3 +46,4 @@ example
 .env
 supabase/.temp/
 supabase/functions/.env
+supabase/monthly-cron.local.sql

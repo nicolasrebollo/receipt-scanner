@@ -4,6 +4,7 @@ import type { AndroidSymbol, SFSymbol } from 'expo-symbols';
 const WEB_ICONS: Partial<Record<SFSymbol, AndroidSymbol>> = {
   airplane: 'flight',
   bag: 'shopping_bag',
+  bell: 'notifications',
   bolt: 'bolt',
   camera: 'photo_camera',
   car: 'directions_car',
@@ -25,11 +26,13 @@ const WEB_ICONS: Partial<Record<SFSymbol, AndroidSymbol>> = {
   'person.2': 'group',
   'person.2.fill': 'group',
   photo: 'photo',
+  plus: 'add',
   'square.and.arrow.up': 'ios_share',
   'square.and.pencil': 'edit_square',
   'square.grid.2x2': 'grid_view',
   ticket: 'confirmation_number',
   trash: 'delete',
+  xmark: 'close',
   'wifi.exclamationmark': 'wifi_off',
 };
 

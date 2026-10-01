@@ -1,16 +1,18 @@
-import { Pressable, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, Switch, View } from 'react-native';
 
 import { AppText, Button, Card, Icon, Screen, SectionHeader, Separator } from '@/components/ui';
 import { Spacing, useTheme } from '@/constants/theme';
 import { chooseOption, confirmAction, promptText, showMessage } from '@/lib/dialogs';
 import { supabase } from '@/lib/supabase';
 import { useHousehold } from '@/providers/app-provider';
+import { useNotifications } from '@/providers/notifications-provider';
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'MXN', 'JPY'];
 
 export default function HouseholdScreen() {
   const theme = useTheme();
   const { household, members, session, refreshHousehold } = useHousehold();
+  const { signOut } = useNotifications();
   const userId = session?.user.id;
   const me = members.find((m) => m.user_id === userId);
 
@@ -43,7 +45,11 @@ export default function HouseholdScreen() {
   };
 
   const chooseCurrency = async () => {
-    const currency = await chooseOption({ title: 'Currency', options: CURRENCIES, current: household.currency });
+    const currency = await chooseOption({
+      title: 'Currency',
+      options: CURRENCIES,
+      current: household.currency,
+    });
     if (!currency || currency === household.currency) return;
     await supabase.from('households').update({ currency }).eq('id', household.id);
     refreshHousehold();
@@ -118,15 +124,121 @@ export default function HouseholdScreen() {
         ))}
       </Card>
 
+      <SectionHeader title="Notifications" />
+      <Card style={styles.list}>
+        <NotificationSettings />
+      </Card>
+
       <SectionHeader title="Account" />
       <Card style={styles.list}>
         <Row label="Signed in as" value={session?.user.email ?? ''} />
         <Separator />
-        <Row label="Sign out" onPress={() => supabase.auth.signOut()} tone="accent" />
+        <Row label="Sign out" onPress={signOut} tone="accent" />
         <Separator />
         <Row label="Leave this budget" onPress={leave} tone="danger" />
       </Card>
     </Screen>
+  );
+}
+
+function NotificationSettings() {
+  const { support, status, busy, enable, disable, setPrefs } = useNotifications();
+
+  if (support === 'unsupported') {
+    return (
+      <Hint text="Notifications work in the web app added to an iPhone Home Screen (iOS 16.4 or later)." />
+    );
+  }
+  if (support === 'needs-install') {
+    return (
+      <Hint text="To get notifications, add this app to your Home Screen (Share, then Add to Home Screen) and open it from there." />
+    );
+  }
+  if (!status) {
+    return (
+      <View style={styles.row}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+  if (status.permission === 'denied') {
+    return (
+      <Hint text="Notifications are blocked for this app. To allow them, open your iPhone’s Settings, tap Notifications, then Receipts." />
+    );
+  }
+
+  return (
+    <>
+      <SwitchRow
+        label="Notifications on this device"
+        value={status.enabled}
+        disabled={busy}
+        onChange={(on) => (on ? enable() : disable())}
+      />
+      {status.enabled ? (
+        <>
+          <Separator />
+          <SwitchRow
+            label="New expenses"
+            detail="When someone else adds one"
+            value={status.newExpenses}
+            onChange={(on) => setPrefs({ newExpenses: on })}
+          />
+          <Separator />
+          <SwitchRow
+            label="Monthly summary"
+            detail="On the 1st of each month"
+            value={status.monthlySummary}
+            onChange={(on) => setPrefs({ monthlySummary: on })}
+          />
+        </>
+      ) : null}
+    </>
+  );
+}
+
+function Hint({ text }: { text: string }) {
+  return (
+    <AppText variant="subhead" tone="secondary" style={{ paddingVertical: 12 }}>
+      {text}
+    </AppText>
+  );
+}
+
+function SwitchRow({
+  label,
+  detail,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  detail?: string;
+  value: boolean;
+  disabled?: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={styles.row}>
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="body">{label}</AppText>
+        {detail ? (
+          <AppText variant="footnote" tone="secondary">
+            {detail}
+          </AppText>
+        ) : null}
+      </View>
+      <Switch
+        accessibilityLabel={label}
+        value={value}
+        disabled={disabled}
+        onValueChange={onChange}
+        trackColor={{ true: theme.accent }}
+        // react-native-web draws a teal knob when on unless told otherwise; iOS ignores this prop.
+        {...(Platform.OS === 'web' ? { activeThumbColor: '#ffffff' } : {})}
+      />
+    </View>
   );
 }
 

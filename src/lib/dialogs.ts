@@ -24,7 +24,11 @@ export function confirmAction(opts: {
   );
 }
 
-export function promptText(opts: { title: string; message?: string; defaultValue?: string }): Promise<string | null> {
+export function promptText(opts: {
+  title: string;
+  message?: string;
+  defaultValue?: string;
+}): Promise<string | null> {
   return new Promise((resolve) =>
     Alert.prompt(
       opts.title,
@@ -39,7 +43,11 @@ export function promptText(opts: { title: string; message?: string; defaultValue
   );
 }
 
-export function chooseOption(opts: { title: string; options: string[]; current?: string }): Promise<string | null> {
+export function chooseOption(opts: {
+  title: string;
+  options: string[];
+  current?: string;
+}): Promise<string | null> {
   return new Promise((resolve) =>
     Alert.alert(opts.title, undefined, [
       ...opts.options.map((o) => ({ text: o === opts.current ? `${o} ✓` : o, onPress: () => resolve(o) })),

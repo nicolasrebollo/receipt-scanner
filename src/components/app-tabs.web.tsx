@@ -24,7 +24,11 @@ export function AppTabs() {
       <TabList
         style={[
           styles.bar,
-          { backgroundColor: theme.card, borderTopColor: theme.separator, paddingBottom: Math.max(insets.bottom, 8) },
+          {
+            backgroundColor: theme.card,
+            borderTopColor: theme.separator,
+            paddingBottom: Math.max(insets.bottom, 8),
+          },
         ]}>
         {TABS.map((t) => (
           <TabTrigger key={t.name} name={t.name} href={t.href} asChild>

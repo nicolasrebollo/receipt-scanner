@@ -5,11 +5,13 @@ import { AppText, Button, Screen, Segmented, TextField } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/providers/app-provider';
+import { useNotifications } from '@/providers/notifications-provider';
 
 type Mode = 'create' | 'join';
 
 export default function SetupScreen() {
   const { refreshHousehold } = useApp();
+  const { signOut } = useNotifications();
   const [mode, setMode] = useState<Mode>('create');
   const [yourName, setYourName] = useState('');
   const [householdName, setHouseholdName] = useState('Our budget');
@@ -91,7 +93,7 @@ export default function SetupScreen() {
         loading={busy}
         disabled={!canSubmit}
       />
-      <Button title="Sign out" variant="plain" onPress={() => supabase.auth.signOut()} />
+      <Button title="Sign out" variant="plain" onPress={signOut} />
     </Screen>
   );
 }

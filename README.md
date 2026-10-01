@@ -2,10 +2,11 @@
 
 An iPhone app for shared household budgeting. Snap a receipt and Claude reads the merchant, total, and date, then picks a budget category. You check the details and save. Everyone in your household sees the same receipts, which update live.
 
-- **Scan:** camera or photo library, or enter an expense manually
+- **Scan:** camera or photo library, or enter an expense manually. Claude also writes a one-line summary and an itemized list with prices, which you can edit or type in yourself
 - **History:** search merchants and notes, filter by month and category, grouped by day
 - **Insights:** totals by day, week, month, year, or a custom date range, broken down by category and by person
 - **Household:** invite others with a 6-character code
+- **Notifications** (home-screen web app): when someone else adds an expense, and when the monthly summary is ready. Each person is asked first and can change it in the Household tab
 
 ## How it fits together
 
@@ -75,7 +76,7 @@ To cut API costs by about 5× at some loss of accuracy on messy receipts, switch
 The same code also builds as a website. Host it for free on Expo's hosting (EAS Hosting), and each person adds it to their iPhone home screen from Safari. It opens full-screen with its own icon. There's no Apple fee, and your Mac doesn't need to be running.
 
 ```bash
-npx supabase functions deploy scan-receipt --use-api   # once: lets the browser call the scan function
+npm run deploy:functions                              # the server functions
 npx eas-cli@latest login                              # same Expo account as Expo Go
 npm run deploy:web                                    # builds the site and publishes it
 ```
@@ -85,6 +86,32 @@ The first deploy asks you to pick a name, which becomes your address: `https://y
 On each iPhone: open the address in **Safari**, tap **Share → Add to Home Screen**, then open the app from the new icon and sign in. The home-screen app keeps its own sign-in, separate from Safari.
 
 To try the web version locally first: `npm run web`.
+
+## Notifications
+
+Notifications use Web Push, so they work in the web app once it's been added to an iPhone Home Screen (iOS 16.4 or later). They don't work in a Safari tab or in Expo Go.
+
+- `notify-receipt` runs when someone saves an expense and notifies the other household members.
+- `monthly-summary` is called by a database schedule on the 1st of each month.
+- `public/sw.js` is the service worker that shows the notification on the phone.
+
+One-time setup, after the database and functions from the Setup section exist:
+
+1. **Keys.** `supabase/functions/.env` holds `VAPID_KEYS` (signs the notifications) and `CRON_SECRET` (lets only the schedule call `monthly-summary`). The matching public key is `EXPO_PUBLIC_VAPID_PUBLIC_KEY` in `.env`. Both files stay out of git. Upload the secrets:
+   ```bash
+   npx supabase secrets set --env-file supabase/functions/.env
+   ```
+2. **Functions.** `npm run deploy:functions` deploys all three. `monthly-summary` is deployed with `--no-verify-jwt` because the schedule authenticates with `CRON_SECRET` instead of a user sign-in.
+3. **Schedule.** Run `supabase/monthly-cron.sql` in the SQL Editor, with `<PROJECT_URL>` and `<CRON_SECRET>` filled in.
+4. **Web app.** `npm run deploy:web`.
+
+If you ever replace `VAPID_KEYS`, every device has to turn notifications off and on again.
+
+## Changing the database
+
+The schema lives in `supabase/migrations/`. This project applies migrations by pasting each new file into the Supabase SQL Editor, in order, rather than with `supabase db push`. Write new migrations so they only add things and are safe to run twice, as `20261001000000_items_and_notifications.sql` does.
+
+Deploy order matters: run the new SQL **before** deploying a web app version that depends on it.
 
 ## Installing for real (optional)
 

@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -101,6 +102,15 @@ export default function InsightsScreen() {
   const { household, members, memberName } = useHousehold();
   const [kind, setKind] = useState<PeriodKind>('month');
   const [anchor, setAnchor] = useState(() => new Date());
+
+  // The monthly-summary notification opens this screen on a specific month ("?month=2026-09").
+  const { month } = useLocalSearchParams<{ month?: string }>();
+  const [shownMonth, setShownMonth] = useState<string>();
+  if (month && month !== shownMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    setShownMonth(month);
+    setKind('month');
+    setAnchor(parseISODate(`${month}-01`));
+  }
   const [custom, setCustom] = useState<DateRange>(() => ({
     start: toISODate(addDays(new Date(), -29)),
     end: today(),

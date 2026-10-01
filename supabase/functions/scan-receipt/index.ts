@@ -1,4 +1,4 @@
-// Reads a receipt photo with Claude and returns { merchant, total, purchased_on, category }.
+// Reads a receipt photo with Claude and returns { merchant, total, purchased_on, category, summary, items }.
 // The app shows the result on a review screen; nothing is saved here.
 
 import Anthropic from 'npm:@anthropic-ai/sdk@0.129.0';
@@ -22,6 +22,7 @@ const CATEGORIES = [
 type Category = (typeof CATEGORIES)[number];
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_ITEMS = 40;
 
 const SYSTEM_PROMPT = `You read photos of shopping receipts for a household budgeting app.
 
@@ -36,7 +37,13 @@ Extract:
   entertainment (movies, events, games, streaming, hobbies), utilities (phone, internet, power, water),
   travel (hotels, flights, rental cars), other (anything that fits none of these).
   For big-box stores, choose by what most of the items are.
-- is_receipt: false if the image is not a receipt or is too blurry to read a total. Then use merchant "", total 0.`;
+- summary: one short plain sentence (under 100 characters) saying what was bought, the way you'd jot it in a budget: "Weekly groceries: produce, dairy and snacks" or "Dinner for two with drinks". No merchant name, no amounts.
+- items: every purchased line item, in receipt order, each with:
+  - name: a readable name. Expand obvious abbreviations ("ORG BNNA" -> "Organic bananas"). If a quantity above 1 is printed, lead with it ("2 x Oat milk").
+  - price: the amount charged for that line (quantity already applied), as printed.
+  Leave out tax, tip, subtotal, total, payment, change and discount lines. If an item's price can't be read, use 0.
+  If there are more than ${MAX_ITEMS} items, list the ${MAX_ITEMS} most expensive. If the receipt has no itemized lines (a card slip, say), return an empty list.
+- is_receipt: false if the image is not a receipt or is too blurry to read a total. Then use merchant "", total 0, summary "", items [].`;
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -46,8 +53,18 @@ const OUTPUT_SCHEMA = {
     total: { type: 'number' },
     purchased_on: { type: 'string' },
     category: { type: 'string', enum: [...CATEGORIES] },
+    summary: { type: 'string' },
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { name: { type: 'string' }, price: { type: 'number' } },
+        required: ['name', 'price'],
+        additionalProperties: false,
+      },
+    },
   },
-  required: ['is_receipt', 'merchant', 'total', 'purchased_on', 'category'],
+  required: ['is_receipt', 'merchant', 'total', 'purchased_on', 'category', 'summary', 'items'],
   additionalProperties: false,
 };
 
@@ -57,7 +74,11 @@ type ScanOutput = {
   total: number;
   purchased_on: string;
   category: Category;
+  summary: string;
+  items: { name: string; price: number }[];
 };
+
+const roundMoney = (n: number) => (Number.isFinite(n) ? Math.max(0, Math.round(n * 100) / 100) : 0);
 
 // Organization-level API keys must name a workspace; workspace-scoped keys don't need this.
 const workspaceId = Deno.env.get('ANTHROPIC_WORKSPACE_ID');
@@ -171,8 +192,18 @@ Deno.serve(async (req) => {
 
   return json({
     merchant: parsed.merchant.trim().slice(0, 120),
-    total: Number.isFinite(parsed.total) ? Math.max(0, Math.round(parsed.total * 100) / 100) : 0,
+    total: roundMoney(parsed.total),
     purchased_on: /^\d{4}-\d{2}-\d{2}$/.test(parsed.purchased_on) ? parsed.purchased_on : today,
     category: CATEGORIES.includes(parsed.category) ? parsed.category : 'other',
+    summary: (parsed.summary ?? '').trim().slice(0, 200),
+    items: (parsed.items ?? [])
+      .map((item) => ({
+        name: String(item.name ?? '')
+          .trim()
+          .slice(0, 80),
+        price: roundMoney(item.price),
+      }))
+      .filter((item) => item.name)
+      .slice(0, MAX_ITEMS),
   });
 });

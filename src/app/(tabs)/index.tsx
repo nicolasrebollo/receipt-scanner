@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { NotificationPrompt } from '@/components/notification-prompt';
 import { ReceiptRow } from '@/components/receipt-row';
 import { AppText, Button, Card, EmptyState, Icon, Screen, SectionHeader, Separator } from '@/components/ui';
 import { Radius, Spacing, useTheme } from '@/constants/theme';
@@ -31,6 +32,7 @@ export default function ScanScreen() {
 
   return (
     <Screen title={household.name} onRefresh={reload}>
+      <NotificationPrompt />
       <View style={styles.hero}>
         <AppText variant="footnote" tone="secondary">
           Spent in {monthName}

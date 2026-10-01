@@ -24,7 +24,11 @@ export function formatMoney(amount: number, currency: string): string {
 
 /** "$" for USD, "€" for EUR: a formatted zero with the digits stripped. */
 export function currencySymbol(currency: string): string {
-  return formatter(currency, 'whole').format(0).replace(/[0-9\s\u00a0\u202f]/g, '') || currency;
+  return (
+    formatter(currency, 'whole')
+      .format(0)
+      .replace(/[0-9\s\u00a0\u202f]/g, '') || currency
+  );
 }
 
 /** Short form for chart axes: $80, $1.2K. */

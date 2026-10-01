@@ -9,7 +9,7 @@ import { AppText, Card, Icon, ModalHeader, Screen } from '@/components/ui';
 import { Radius, Spacing, useTheme } from '@/constants/theme';
 import { today } from '@/lib/dates';
 import { showMessage } from '@/lib/dialogs';
-import { createReceipt } from '@/lib/receipts';
+import { announceReceipt, createReceipt } from '@/lib/receipts';
 import { prepareImage, readReceipt, type PreparedImage } from '@/lib/scan';
 import type { ReceiptDraft } from '@/lib/types';
 import { useHousehold } from '@/providers/app-provider';
@@ -27,6 +27,7 @@ export default function ReviewScreen() {
     purchased_on: today(),
     category: 'other',
     notes: '',
+    items: [],
   });
   const [image, setImage] = useState<PreparedImage | null>(null);
   const [status, setStatus] = useState<Status>(params.uri ? 'reading' : 'manual');
@@ -50,6 +51,8 @@ export default function ReviewScreen() {
           total: result.total > 0 ? result.total.toFixed(2) : '',
           purchased_on: result.purchased_on > today() ? today() : result.purchased_on,
           category: result.category,
+          notes: result.summary ?? '',
+          items: (result.items ?? []).map((item) => ({ name: item.name, price: item.price.toFixed(2) })),
         }));
         setStatus('read');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -73,7 +76,8 @@ export default function ReviewScreen() {
     if (!input) return;
     setSaving(true);
     try {
-      await createReceipt(household.id, input, image?.base64);
+      const receiptId = await createReceipt(household.id, input, image?.base64);
+      announceReceipt(receiptId);
       notifyReceiptsChanged();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();

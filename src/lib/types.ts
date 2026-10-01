@@ -12,6 +12,8 @@ export type Member = {
   display_name: string;
 };
 
+export type ReceiptItem = { name: string; price: number };
+
 export type Receipt = {
   id: string;
   household_id: string;
@@ -21,6 +23,7 @@ export type Receipt = {
   purchased_on: string; // YYYY-MM-DD
   category: CategoryId;
   notes: string | null;
+  items: ReceiptItem[];
   image_path: string | null;
   created_at: string;
 };
@@ -31,4 +34,5 @@ export type ReceiptDraft = {
   purchased_on: string;
   category: CategoryId;
   notes: string;
+  items: { name: string; price: string }[]; // price as typed
 };

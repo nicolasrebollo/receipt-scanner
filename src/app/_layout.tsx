@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { AppProvider, useApp } from '@/providers/app-provider';
+import { NotificationsProvider } from '@/providers/notifications-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,7 +20,9 @@ export default function RootLayout() {
         colors: { ...base.colors, primary: colors.accent, background: colors.background, card: colors.card },
       }}>
       <AppProvider>
-        <RootNavigator />
+        <NotificationsProvider>
+          <RootNavigator />
+        </NotificationsProvider>
       </AppProvider>
     </ThemeProvider>
   );

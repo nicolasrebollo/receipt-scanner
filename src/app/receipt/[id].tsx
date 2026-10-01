@@ -9,7 +9,14 @@ import { AppText, Button, ModalHeader, Screen } from '@/components/ui';
 import { Radius, Spacing, useTheme } from '@/constants/theme';
 import { formatDay, toISODate } from '@/lib/dates';
 import { confirmAction, showMessage } from '@/lib/dialogs';
-import { deleteReceipt, getReceipt, receiptImageUrl, updateReceipt } from '@/lib/receipts';
+import {
+  deleteReceipt,
+  getReceipt,
+  receiptImageBase64,
+  receiptImageUrl,
+  updateReceipt,
+} from '@/lib/receipts';
+import { readReceipt } from '@/lib/scan';
 import type { Receipt, ReceiptDraft } from '@/lib/types';
 import { useHousehold } from '@/providers/app-provider';
 
@@ -20,6 +27,7 @@ function toDraft(r: Receipt): ReceiptDraft {
     purchased_on: r.purchased_on,
     category: r.category,
     notes: r.notes ?? '',
+    items: r.items.map((item) => ({ name: item.name, price: item.price.toFixed(2) })),
   };
 }
 
@@ -33,6 +41,7 @@ export default function ReceiptDetailScreen() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [rereading, setRereading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +78,40 @@ export default function ReceiptDetailScreen() {
     }
   };
 
+  // Fills in the summary and item list for a receipt saved before those existed (or to redo them).
+  // Merchant, amount, date and category are left alone, and nothing is stored until Save is tapped.
+  const rereadPhoto = async () => {
+    if (!receipt?.image_path || !draft) return;
+    if (draft.items.length > 0) {
+      const replace = await confirmAction({
+        title: 'Replace the item list?',
+        message: 'The items shown now will be replaced with what’s read from the photo.',
+        confirmLabel: 'Replace',
+      });
+      if (!replace) return;
+    }
+    setRereading(true);
+    try {
+      const result = await readReceipt(await receiptImageBase64(receipt.image_path));
+      if (result.items === undefined) {
+        showMessage(
+          'Server update needed',
+          'The scan function on the server doesn’t return items yet. Redeploy it, then try again.',
+        );
+        return;
+      }
+      const items = result.items.map((item) => ({ name: item.name, price: item.price.toFixed(2) }));
+      // Keep a summary the person wrote themselves; only fill an empty one.
+      setDraft((d) => d && { ...d, items, notes: d.notes.trim() ? d.notes : (result.summary ?? '') });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (items.length === 0) showMessage('No items found', 'This photo doesn’t show an itemized list.');
+    } catch (e) {
+      showMessage('Couldn’t read the photo', e instanceof Error ? e.message : 'Try again in a moment.');
+    } finally {
+      setRereading(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!receipt) return;
     const confirmed = await confirmAction({
@@ -96,7 +139,7 @@ export default function ReceiptDetailScreen() {
         onCancel={() => router.back()}
         onSave={save}
         saving={busy}
-        saveDisabled={!changed || !input}
+        saveDisabled={!changed || !input || rereading}
       />
       {!receipt || !draft ? (
         <View style={styles.center}>
@@ -117,7 +160,24 @@ export default function ReceiptDetailScreen() {
               accessibilityLabel="Receipt photo"
             />
           ) : null}
-          <ReceiptForm draft={draft} onChange={setDraft} currency={household.currency} />
+          {receipt.image_path ? (
+            <Button
+              title="Read items from photo"
+              icon="doc.text.viewfinder"
+              variant="secondary"
+              onPress={rereadPhoto}
+              loading={rereading}
+              disabled={busy}
+            />
+          ) : null}
+          <View style={{ opacity: rereading ? 0.4 : 1 }}>
+            <ReceiptForm
+              draft={draft}
+              onChange={setDraft}
+              currency={household.currency}
+              disabled={rereading}
+            />
+          </View>
           <AppText variant="footnote" tone="muted" style={{ textAlign: 'center' }}>
             Added by {memberName(receipt.created_by)} on{' '}
             {formatDay(toISODate(new Date(receipt.created_at)), { withYear: true })}
