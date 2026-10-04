@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { AppProvider, useApp } from '@/providers/app-provider';
+import { ChatProvider } from '@/providers/chat-provider';
 import { NotificationsProvider } from '@/providers/notifications-provider';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,7 +22,9 @@ export default function RootLayout() {
       }}>
       <AppProvider>
         <NotificationsProvider>
-          <RootNavigator />
+          <ChatProvider>
+            <RootNavigator />
+          </ChatProvider>
         </NotificationsProvider>
       </AppProvider>
     </ThemeProvider>
@@ -49,6 +52,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="review" options={{ presentation: 'modal', gestureEnabled: false }} />
         <Stack.Screen name="receipt/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="chat-history" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
   );

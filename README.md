@@ -5,6 +5,7 @@ An iPhone app for shared household budgeting. Snap a receipt and Claude reads th
 - **Scan:** camera or photo library, or enter an expense manually. Claude also writes a one-line summary and an itemized list with prices, which you can edit or type in yourself
 - **History:** search merchants and notes, filter by month and category, grouped by day
 - **Insights:** totals by day, week, month, year, or a custom date range, broken down by category and by person
+- **Chat:** ask an assistant about your household's spending. It looks up your receipts to answer, keeps your past conversations, and remembers things you tell it to
 - **Household:** invite others with a 6-character code
 - **Notifications** (home-screen web app): when someone else adds an expense, and when the monthly summary is ready. Each person is asked first and can change it in the Household tab
 
@@ -67,9 +68,10 @@ While you're developing, your partner can also run the app through Expo Go, but 
 | Item | Cost |
 |---|---|
 | Supabase | Free tier (500 MB database, 1 GB photo storage) is plenty |
-| Claude API (`claude-haiku-4-5`) | Roughly 1¢ per receipt, so about $1/month at 100 receipts |
+| Claude API (`claude-sonnet-5-5`, low effort) | Roughly 2¢ per receipt, so about $2/month at 100 receipts |
+| Chat (`claude-sonnet-5-5`, low effort) | Roughly 1–3¢ per question, more for long conversations |
 
-For better accuracy on long or crumpled receipts, change `MODEL` in `supabase/functions/scan-receipt/index.ts` to `claude-sonnet-5-5` (about 2× the price) or `claude-opus-5-5` (about 4×), then run `npm run deploy:functions`. Use the **Read items from photo** button on a saved receipt to compare results.
+To trade cost against accuracy, change `MODEL` in `supabase/functions/scan-receipt/index.ts`, then run `npm run deploy:functions`. `claude-opus-5-5` costs about 2× as much and is the most accurate on long or crumpled receipts. `claude-haiku-4-5` costs about half as much; it doesn't accept the `betas`, `fallbacks` or `effort` settings, so remove those lines when switching to it. Use the **Read items from photo** button on a saved receipt to compare results.
 
 ## Free web app (add to Home Screen)
 
@@ -106,6 +108,18 @@ One-time setup, after the database and functions from the Setup section exist:
 4. **Web app.** `npm run deploy:web`.
 
 If you ever replace `VAPID_KEYS`, every device has to turn notifications off and on again.
+
+## Chat
+
+The Chat tab talks to the `chat` function, which runs Claude Sonnet 5.5 with tools that read the household's receipts:
+
+- `spending_summary` adds up spending for a period, optionally by category, month, week, day, merchant or person. The arithmetic is done in code, not by the model.
+- `search_receipts` finds and lists receipts; `search_items` finds line items across itemized receipts.
+- `remember` and `forget` manage the assistant's memory, which is included in every later chat.
+
+The function queries the database as the signed-in person, so it can only see what that person can. Conversations (`chat_conversations`, `chat_messages`) and memories (`chat_memories`) are private to whoever created them; other household members can't read them. Replies stream to the app as server-sent events.
+
+Setup: run `supabase/migrations/20261004000000_chat.sql` in the SQL Editor, then `npm run deploy:functions` and `npm run deploy:web`. It uses the same `ANTHROPIC_API_KEY` secret as scanning. To change the model, edit `MODEL` in `supabase/functions/chat/index.ts`.
 
 ## Changing the database
 

@@ -136,11 +136,13 @@ export function ModalHeader({
   onCancel,
   onSave,
   saveLabel = 'Save',
+  cancelLabel = 'Cancel',
   saveDisabled,
   saving,
 }: {
   title: string;
   onCancel: () => void;
+  cancelLabel?: string;
   onSave?: () => void;
   saveLabel?: string;
   saveDisabled?: boolean;
@@ -156,7 +158,7 @@ export function ModalHeader({
         topInset > 0 && { paddingTop: Spacing.md + 2 + topInset },
       ]}>
       <Pressable accessibilityRole="button" onPress={onCancel} hitSlop={12} style={styles.modalSide}>
-        <Text style={[textVariants.body, { color: theme.accent }]}>Cancel</Text>
+        <Text style={[textVariants.body, { color: theme.accent }]}>{cancelLabel}</Text>
       </Pressable>
       <AppText variant="headline" numberOfLines={1}>
         {title}

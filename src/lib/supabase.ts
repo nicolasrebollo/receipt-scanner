@@ -11,6 +11,10 @@ if (!url || !key) {
   );
 }
 
+/** For the few calls that go around the client, such as the streaming chat request. */
+export const SUPABASE_URL = url;
+export const SUPABASE_KEY = key;
+
 export const supabase = createClient(url, key, {
   auth: {
     storage: AsyncStorage,

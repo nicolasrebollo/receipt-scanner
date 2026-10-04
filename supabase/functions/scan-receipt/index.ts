@@ -4,9 +4,9 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.129.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// Haiku is the cheapest model and reads receipts well enough; `claude-sonnet-5-5` or `claude-opus-5-5`
-// are more accurate on long or crumpled receipts at 2x and 4x the price.
-const MODEL = 'claude-haiku-4-5';
+// Sonnet is the middle option: about half the price of `claude-opus-5-5` and twice `claude-haiku-4-5`.
+// Haiku doesn't accept `effort` or `fallbacks`, so remove those two settings (and `betas`) if you switch to it.
+const MODEL = 'claude-sonnet-5-5';
 
 // Keep in sync with src/lib/categories.ts and the receipts.category check constraint.
 const CATEGORIES = [
@@ -131,12 +131,18 @@ Deno.serve(async (req) => {
   if (!imageBase64) return json({ error: 'Missing image' }, 400);
   if (imageBase64.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'Image too large' }, 413);
 
-  let response: Anthropic.Message;
+  let response: Anthropic.Beta.BetaMessage;
   try {
-    response = await anthropic.messages.create({
+    response = await anthropic.beta.messages.create({
       model: MODEL,
       max_tokens: 8000,
-      output_config: { format: { type: 'json_schema', schema: OUTPUT_SCHEMA } },
+      // If Claude declines a request, retry it on the model Anthropic recommends instead of failing.
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      output_config: {
+        effort: 'low',
+        format: { type: 'json_schema', schema: OUTPUT_SCHEMA },
+      },
       system: SYSTEM_PROMPT,
       messages: [
         {

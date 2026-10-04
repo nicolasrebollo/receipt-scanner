@@ -11,6 +11,7 @@ const TABS = [
   { name: 'index', href: '/', label: 'Scan', icon: 'doc.text.viewfinder' },
   { name: 'history', href: '/history', label: 'History', icon: 'list.bullet' },
   { name: 'insights', href: '/insights', label: 'Insights', icon: 'chart.bar' },
+  { name: 'chat', href: '/chat', label: 'Chat', icon: 'bubble.left.and.bubble.right' },
   { name: 'settings', href: '/settings', label: 'Household', icon: 'person.2' },
 ] as const;
 
