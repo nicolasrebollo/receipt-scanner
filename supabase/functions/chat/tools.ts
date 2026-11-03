@@ -5,19 +5,9 @@ import { betaZodTool } from 'npm:@anthropic-ai/sdk@0.129.0/helpers/beta/zod';
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@4';
 
-// Keep in sync with src/lib/categories.ts and the receipts.category check constraint.
-export const CATEGORIES = [
-  'groceries',
-  'dining',
-  'transport',
-  'shopping',
-  'household',
-  'health',
-  'entertainment',
-  'utilities',
-  'travel',
-  'other',
-] as const;
+import { CATEGORIES } from '../_shared/categories.ts';
+
+export { CATEGORIES };
 
 export type ToolContext = {
   db: SupabaseClient;

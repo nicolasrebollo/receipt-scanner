@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -231,7 +231,21 @@ export default function InsightsScreen() {
         <>
           <SectionHeader title="By category" />
           <Card>
-            <Breakdown rows={categoryRows} format={money} />
+            <Breakdown
+              rows={categoryRows}
+              format={money}
+              onPress={(row) =>
+                router.push({
+                  pathname: '/category',
+                  params: {
+                    category: row.key,
+                    start: range.start,
+                    end: range.end,
+                    period: kind === 'custom' ? formatRange(range) : periodLabel(kind, anchor),
+                  },
+                })
+              }
+            />
           </Card>
         </>
       ) : null}

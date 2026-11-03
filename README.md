@@ -89,6 +89,14 @@ On each iPhone: open the address in **Safari**, tap **Share → Add to Home Scre
 
 To try the web version locally first: `npm run web`.
 
+### Shipping an update
+
+1. If the change includes a new file in `supabase/migrations/`, run it in the Supabase SQL Editor first.
+2. If anything in `supabase/functions/` changed, run `npm run deploy:functions`.
+3. Run `npm run deploy:web`.
+4. On each phone, open the app. Within a few seconds a **New version available** banner appears at the top; tap **Update**. (If it doesn't appear, swipe the app away in the app switcher and open it again.)
+5. Check the version at the bottom of the **Household** tab. It shows when the running copy was built, so it should match the time of step 3.
+
 ## Notifications
 
 Notifications use Web Push, so they work in the web app once it's been added to an iPhone Home Screen (iOS 16.4 or later). They don't work in a Safari tab or in Expo Go.
@@ -153,7 +161,7 @@ supabase/migrations/      database schema and security rules
 supabase/functions/       scan-receipt (Claude)
 ```
 
-Categories are defined in three places that must stay in sync: `src/lib/categories.ts`, the `CATEGORIES` list in the edge function, and the `receipts.category` check constraint in the migration.
+Categories are defined in three places that must stay in sync: `src/lib/categories.ts` (labels and icons for the app), `supabase/functions/_shared/categories.ts` (labels and descriptions used by the scanner and chat), and the `receipts_category_check` constraint, last set in `supabase/migrations/20261102000000_more_categories.sql`. Adding a category means a new migration that replaces that constraint.
 
 ## Checks
 

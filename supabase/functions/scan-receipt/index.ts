@@ -4,24 +4,11 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.129.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+import { CATEGORIES, CATEGORY_GUIDE, type Category } from '../_shared/categories.ts';
+
 // Sonnet is the middle option: about half the price of `claude-opus-5-5` and twice `claude-haiku-4-5`.
 // Haiku doesn't accept `effort` or `fallbacks`, so remove those two settings (and `betas`) if you switch to it.
 const MODEL = 'claude-sonnet-5-5';
-
-// Keep in sync with src/lib/categories.ts and the receipts.category check constraint.
-const CATEGORIES = [
-  'groceries',
-  'dining',
-  'transport',
-  'shopping',
-  'household',
-  'health',
-  'entertainment',
-  'utilities',
-  'travel',
-  'other',
-] as const;
-type Category = (typeof CATEGORIES)[number];
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_ITEMS = 40;
@@ -32,13 +19,9 @@ Extract:
 - merchant: the store or business name as a person would say it ("Trader Joe's", not "TRADER JOE'S #552").
 - total: the final amount paid, including tax and tip. Ignore subtotals, change due, and loyalty savings lines.
 - purchased_on: the purchase date as YYYY-MM-DD, or an empty string if no date is visible. Receipts often print dates as MM/DD/YY; use today's date (given below) to pick the right century and to sanity-check the year.
-- category: the single budget category that best fits the whole purchase:
-  groceries (supermarkets, food to cook at home), dining (restaurants, cafes, bars, takeout, food delivery),
-  transport (fuel, parking, rideshare, transit, car service), shopping (clothing, electronics, general retail),
-  household (home goods, hardware, cleaning, furniture), health (pharmacy, medical, fitness),
-  entertainment (movies, events, games, streaming, hobbies), utilities (phone, internet, power, water),
-  travel (hotels, flights, rental cars), other (anything that fits none of these).
-  For big-box stores, choose by what most of the items are.
+- category: the single budget category that best fits the whole purchase. Use one of these ids:
+${CATEGORY_GUIDE}
+  For big-box stores, choose by what most of the items are. A recurring monthly charge for a service (a streaming plan, an app, a gym) is subscriptions.
 - summary: one short plain sentence (under 100 characters) saying what was bought, the way you'd jot it in a budget: "Weekly groceries: produce, dairy and snacks" or "Dinner for two with drinks". No merchant name, no amounts.
 - items: every purchased line item, in receipt order, each with:
   - name: a readable name. Expand obvious abbreviations ("ORG BNNA" -> "Organic bananas"). If a quantity above 1 is printed, lead with it ("2 x Oat milk").

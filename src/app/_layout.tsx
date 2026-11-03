@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { UpdateBanner } from '@/components/update-banner';
 import { Colors } from '@/constants/theme';
 import { AppProvider, useApp } from '@/providers/app-provider';
 import { ChatProvider } from '@/providers/chat-provider';
@@ -41,19 +42,23 @@ function RootNavigator() {
   if (initializing) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!session}>
-        <Stack.Screen name="sign-in" />
-      </Stack.Protected>
-      <Stack.Protected guard={!!session && !household}>
-        <Stack.Screen name="setup" />
-      </Stack.Protected>
-      <Stack.Protected guard={!!session && !!household}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="review" options={{ presentation: 'modal', gestureEnabled: false }} />
-        <Stack.Screen name="receipt/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="chat-history" options={{ presentation: 'modal' }} />
-      </Stack.Protected>
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="sign-in" />
+        </Stack.Protected>
+        <Stack.Protected guard={!!session && !household}>
+          <Stack.Screen name="setup" />
+        </Stack.Protected>
+        <Stack.Protected guard={!!session && !!household}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="review" options={{ presentation: 'modal', gestureEnabled: false }} />
+          <Stack.Screen name="receipt/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="chat-history" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="category" options={{ presentation: 'modal' }} />
+        </Stack.Protected>
+      </Stack>
+      <UpdateBanner />
+    </>
   );
 }

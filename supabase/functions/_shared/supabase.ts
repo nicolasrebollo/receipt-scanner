@@ -40,7 +40,4 @@ export function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
-/** "groceries" -> "Groceries" (category ids are lowercase labels). */
-export function categoryLabel(id: string): string {
-  return id.charAt(0).toUpperCase() + id.slice(1);
-}
+export { categoryLabel } from './categories.ts';

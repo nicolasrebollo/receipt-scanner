@@ -2,6 +2,7 @@ import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, Switch, View
 
 import { AppText, Button, Card, Icon, Screen, SectionHeader, Separator } from '@/components/ui';
 import { Spacing, useTheme } from '@/constants/theme';
+import { buildLabel } from '@/lib/build-info';
 import { chooseOption, confirmAction, promptText, showMessage } from '@/lib/dialogs';
 import { supabase } from '@/lib/supabase';
 import { useHousehold } from '@/providers/app-provider';
@@ -137,6 +138,10 @@ export default function HouseholdScreen() {
         <Separator />
         <Row label="Leave this budget" onPress={leave} tone="danger" />
       </Card>
+
+      <AppText variant="footnote" tone="muted" style={{ textAlign: 'center' }}>
+        {buildLabel() ? `App version: ${buildLabel()}` : 'Development build'}
+      </AppText>
     </Screen>
   );
 }

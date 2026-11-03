@@ -106,8 +106,16 @@ export function BarChart({
 
 export type BreakdownRow = { key: string; label: string; icon?: SFSymbol; value: number };
 
-/** Ranked horizontal bars showing each row's share of the total. */
-export function Breakdown({ rows, format }: { rows: BreakdownRow[]; format: (n: number) => string }) {
+/** Ranked horizontal bars showing each row's share of the total. With `onPress`, each row is tappable. */
+export function Breakdown({
+  rows,
+  format,
+  onPress,
+}: {
+  rows: BreakdownRow[];
+  format: (n: number) => string;
+  onPress?: (row: BreakdownRow) => void;
+}) {
   const theme = useTheme();
   const total = rows.reduce((sum, r) => sum + r.value, 0);
   const max = Math.max(0, ...rows.map((r) => r.value));
@@ -117,10 +125,12 @@ export function Breakdown({ rows, format }: { rows: BreakdownRow[]; format: (n: 
       {rows.map((r) => {
         const share = total > 0 ? r.value / total : 0;
         return (
-          <View
+          <Pressable
             key={r.key}
-            style={{ gap: 6 }}
-            accessible
+            disabled={!onPress}
+            onPress={onPress ? () => onPress(r) : undefined}
+            style={({ pressed }) => ({ gap: 6, opacity: pressed ? 0.6 : 1 })}
+            accessibilityRole={onPress ? 'button' : undefined}
             accessibilityLabel={`${r.label}: ${format(r.value)}, ${Math.round(share * 100)} percent`}>
             <View style={styles.breakdownHeader}>
               {r.icon ? (
@@ -137,6 +147,7 @@ export function Breakdown({ rows, format }: { rows: BreakdownRow[]; format: (n: 
               <AppText variant="subhead" style={[styles.tabular, styles.breakdownValue]}>
                 {format(r.value)}
               </AppText>
+              {onPress ? <Icon name="chevron.right" size={12} color={theme.textMuted} /> : null}
             </View>
             <View style={[styles.track, { backgroundColor: theme.fill }]}>
               <View
@@ -146,7 +157,7 @@ export function Breakdown({ rows, format }: { rows: BreakdownRow[]; format: (n: 
                 ]}
               />
             </View>
-          </View>
+          </Pressable>
         );
       })}
     </View>
